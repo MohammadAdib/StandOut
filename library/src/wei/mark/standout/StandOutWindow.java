@@ -13,11 +13,13 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
@@ -35,6 +37,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 /**
@@ -114,8 +117,7 @@ public abstract class StandOutWindow extends Service {
 	 * 
 	 * @see #show(int)
 	 */
-	public static void show(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
+	public static void show(Context context, Class<? extends StandOutWindow> cls, int id) {
 		context.startService(getShowIntent(context, cls, id));
 	}
 
@@ -134,8 +136,7 @@ public abstract class StandOutWindow extends Service {
 	 *            shown.
 	 * @see #hide(int)
 	 */
-	public static void hide(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
+	public static void hide(Context context, Class<? extends StandOutWindow> cls, int id) {
 		context.startService(getShowIntent(context, cls, id));
 	}
 
@@ -152,8 +153,7 @@ public abstract class StandOutWindow extends Service {
 	 *            shown.
 	 * @see #close(int)
 	 */
-	public static void close(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
+	public static void close(Context context, Class<? extends StandOutWindow> cls, int id) {
 		context.startService(getCloseIntent(context, cls, id));
 	}
 
@@ -167,8 +167,7 @@ public abstract class StandOutWindow extends Service {
 	 *            the window.
 	 * @see #closeAll()
 	 */
-	public static void closeAll(Context context,
-			Class<? extends StandOutWindow> cls) {
+	public static void closeAll(Context context, Class<? extends StandOutWindow> cls) {
 		context.startService(getCloseAllIntent(context, cls));
 	}
 
@@ -202,11 +201,8 @@ public abstract class StandOutWindow extends Service {
 	 *            Provide the id of the sending window if you want a result.
 	 * @see #sendData(int, Class, int, int, Bundle)
 	 */
-	public static void sendData(Context context,
-			Class<? extends StandOutWindow> toCls, int toId, int requestCode,
-			Bundle data, Class<? extends StandOutWindow> fromCls, int fromId) {
-		context.startService(getSendDataIntent(context, toCls, toId,
-				requestCode, data, fromCls, fromId));
+	public static void sendData(Context context, Class<? extends StandOutWindow> toCls, int toId, int requestCode, Bundle data, Class<? extends StandOutWindow> fromCls, int fromId) {
+		context.startService(getSendDataIntent(context, toCls, toId, requestCode, data, fromCls, fromId));
 	}
 
 	/**
@@ -224,13 +220,11 @@ public abstract class StandOutWindow extends Service {
 	 * @return An {@link Intent} to use with
 	 *         {@link Context#startService(Intent)}.
 	 */
-	public static Intent getShowIntent(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
+	public static Intent getShowIntent(Context context, Class<? extends StandOutWindow> cls, int id) {
 		boolean cached = sWindowCache.isCached(id, cls);
 		String action = cached ? ACTION_RESTORE : ACTION_SHOW;
 		Uri uri = cached ? Uri.parse("standout://" + cls + '/' + id) : null;
-		return new Intent(context, cls).putExtra("id", id).setAction(action)
-				.setData(uri);
+		return new Intent(context, cls).putExtra("id", id).setAction(action).setData(uri);
 	}
 
 	/**
@@ -248,10 +242,8 @@ public abstract class StandOutWindow extends Service {
 	 * @return An {@link Intent} to use with
 	 *         {@link Context#startService(Intent)}.
 	 */
-	public static Intent getHideIntent(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
-		return new Intent(context, cls).putExtra("id", id).setAction(
-				ACTION_HIDE);
+	public static Intent getHideIntent(Context context, Class<? extends StandOutWindow> cls, int id) {
+		return new Intent(context, cls).putExtra("id", id).setAction(ACTION_HIDE);
 	}
 
 	/**
@@ -269,10 +261,8 @@ public abstract class StandOutWindow extends Service {
 	 * @return An {@link Intent} to use with
 	 *         {@link Context#startService(Intent)}.
 	 */
-	public static Intent getCloseIntent(Context context,
-			Class<? extends StandOutWindow> cls, int id) {
-		return new Intent(context, cls).putExtra("id", id).setAction(
-				ACTION_CLOSE);
+	public static Intent getCloseIntent(Context context, Class<? extends StandOutWindow> cls, int id) {
+		return new Intent(context, cls).putExtra("id", id).setAction(ACTION_CLOSE);
 	}
 
 	/**
@@ -286,8 +276,7 @@ public abstract class StandOutWindow extends Service {
 	 * @return An {@link Intent} to use with
 	 *         {@link Context#startService(Intent)}.
 	 */
-	public static Intent getCloseAllIntent(Context context,
-			Class<? extends StandOutWindow> cls) {
+	public static Intent getCloseAllIntent(Context context, Class<? extends StandOutWindow> cls) {
 		return new Intent(context, cls).setAction(ACTION_CLOSE_ALL);
 	}
 
@@ -317,14 +306,8 @@ public abstract class StandOutWindow extends Service {
 	 * @return An {@link Intnet} to use with
 	 *         {@link Context#startService(Intent)}.
 	 */
-	public static Intent getSendDataIntent(Context context,
-			Class<? extends StandOutWindow> toCls, int toId, int requestCode,
-			Bundle data, Class<? extends StandOutWindow> fromCls, int fromId) {
-		return new Intent(context, toCls).putExtra("id", toId)
-				.putExtra("requestCode", requestCode)
-				.putExtra("wei.mark.standout.data", data)
-				.putExtra("wei.mark.standout.fromCls", fromCls)
-				.putExtra("fromId", fromId).setAction(ACTION_SEND_DATA);
+	public static Intent getSendDataIntent(Context context, Class<? extends StandOutWindow> toCls, int toId, int requestCode, Bundle data, Class<? extends StandOutWindow> fromCls, int fromId) {
+		return new Intent(context, toCls).putExtra("id", toId).putExtra("requestCode", requestCode).putExtra("wei.mark.standout.data", data).putExtra("wei.mark.standout.fromCls", fromCls).putExtra("fromId", fromId).setAction(ACTION_SEND_DATA);
 	}
 
 	// internal map of ids to shown/hidden views
@@ -343,7 +326,7 @@ public abstract class StandOutWindow extends Service {
 	LayoutInflater mLayoutInflater;
 
 	// internal state variables
-	private boolean startedForeground;
+	public static boolean startedForeground;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -368,13 +351,12 @@ public abstract class StandOutWindow extends Service {
 		// intent should be created with
 		// getShowIntent(), getHideIntent(), getCloseIntent()
 		if (intent != null) {
-			String action = intent.getAction();
+			String action = "" + intent.getAction();
 			int id = intent.getIntExtra("id", DEFAULT_ID);
 
 			// this will interfere with getPersistentNotification()
 			if (id == ONGOING_NOTIFICATION_ID) {
-				throw new RuntimeException(
-						"ID cannot equals StandOutWindow.ONGOING_NOTIFICATION_ID");
+				throw new RuntimeException("ID cannot equals StandOutWindow.ONGOING_NOTIFICATION_ID");
 			}
 
 			if (ACTION_SHOW.equals(action) || ACTION_RESTORE.equals(action)) {
@@ -386,17 +368,17 @@ public abstract class StandOutWindow extends Service {
 			} else if (ACTION_CLOSE_ALL.equals(action)) {
 				closeAll();
 			} else if (ACTION_SEND_DATA.equals(action)) {
-				if (!isExistingId(id) && id != DISREGARD_ID) {
-					Log.w(TAG,
-							"Sending data to non-existant window. If this is not intended, make sure toId is either an existing window's id or DISREGARD_ID.");
+				if (isExistingId(id) || id == DISREGARD_ID) {
+					Bundle data = intent.getBundleExtra("wei.mark.standout.data");
+					int requestCode = intent.getIntExtra("requestCode", 0);
+					@SuppressWarnings("unchecked")
+					Class<? extends StandOutWindow> fromCls = (Class<? extends StandOutWindow>) intent.getSerializableExtra("wei.mark.standout.fromCls");
+					int fromId = intent.getIntExtra("fromId", DEFAULT_ID);
+
+					onReceiveData(id, requestCode, data, fromCls, fromId);
+				} else {
+					Log.w(TAG, "Failed to send data to non-existant window. Make sure toId is either an existing window's id, or is DISREGARD_ID.");
 				}
-				Bundle data = intent.getBundleExtra("wei.mark.standout.data");
-				int requestCode = intent.getIntExtra("requestCode", 0);
-				@SuppressWarnings("unchecked")
-				Class<? extends StandOutWindow> fromCls = (Class<? extends StandOutWindow>) intent
-						.getSerializableExtra("wei.mark.standout.fromCls");
-				int fromId = intent.getIntExtra("fromId", DEFAULT_ID);
-				onReceiveData(id, requestCode, data, fromCls, fromId);
 			}
 		} else {
 			Log.w(TAG, "Tried to onStartCommand() with a null intent.");
@@ -492,6 +474,10 @@ public abstract class StandOutWindow extends Service {
 		return 0;
 	}
 
+	public int getOtherFlags(int id) {
+		return StandOutLayoutParams.FLAG_NOT_TOUCH_MODAL | StandOutLayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+	}
+
 	/**
 	 * Implement this method to set a custom title for the window corresponding
 	 * to the id.
@@ -525,7 +511,7 @@ public abstract class StandOutWindow extends Service {
 	 * @return The title for the persistent notification.
 	 */
 	public String getPersistentNotificationTitle(int id) {
-		return getAppName() + " Running";
+		return getAppName();
 	}
 
 	/**
@@ -649,15 +635,13 @@ public abstract class StandOutWindow extends Service {
 		PendingIntent contentIntent = null;
 
 		if (notificationIntent != null) {
-			contentIntent = PendingIntent.getService(this, 0,
-					notificationIntent,
-					// flag updates existing persistent notification
+			contentIntent = PendingIntent.getService(this, 0, notificationIntent,
+			// flag updates existing persistent notification
 					PendingIntent.FLAG_UPDATE_CURRENT);
 		}
 
 		Notification notification = new Notification(icon, tickerText, when);
-		notification.setLatestEventInfo(c, contentTitle, contentText,
-				contentIntent);
+		notification.setLatestEventInfo(c, contentTitle, contentText, contentIntent);
 		return notification;
 	}
 
@@ -693,15 +677,13 @@ public abstract class StandOutWindow extends Service {
 		PendingIntent contentIntent = null;
 
 		if (notificationIntent != null) {
-			contentIntent = PendingIntent.getService(this, 0,
-					notificationIntent,
-					// flag updates existing persistent notification
+			contentIntent = PendingIntent.getService(this, 0, notificationIntent,
+			// flag updates existing persistent notification
 					PendingIntent.FLAG_UPDATE_CURRENT);
 		}
 
 		Notification notification = new Notification(icon, tickerText, when);
-		notification.setLatestEventInfo(c, contentTitle, contentText,
-				contentIntent);
+		notification.setLatestEventInfo(c, contentTitle, contentText, contentIntent);
 		return notification;
 	}
 
@@ -777,34 +759,31 @@ public abstract class StandOutWindow extends Service {
 		}
 
 		// add default drop down items
-		items.add(new DropDownListItem(
-				android.R.drawable.ic_menu_close_clear_cancel, "Quit "
-						+ getAppName(), new Runnable() {
+		items.add(new DropDownListItem(android.R.drawable.ic_menu_close_clear_cancel, "Quit " + getAppName(), new Runnable() {
 
-					@Override
-					public void run() {
-						closeAll();
-					}
-				}));
+			@Override
+			public void run() {
+				closeAll();
+			}
+		}));
 
 		// turn item list into views in PopupWindow
 		LinearLayout list = new LinearLayout(this);
 		list.setOrientation(LinearLayout.VERTICAL);
 
-		final PopupWindow dropDown = new PopupWindow(list,
-				StandOutLayoutParams.WRAP_CONTENT,
-				StandOutLayoutParams.WRAP_CONTENT, true);
+		ScrollView scroller = new ScrollView(this);
+		scroller.addView(list);
+
+		final PopupWindow dropDown = new PopupWindow(scroller, StandOutLayoutParams.WRAP_CONTENT, StandOutLayoutParams.WRAP_CONTENT, true);
 
 		for (final DropDownListItem item : items) {
-			ViewGroup listItem = (ViewGroup) mLayoutInflater.inflate(
-					R.layout.drop_down_list_item, null);
+			ViewGroup listItem = (ViewGroup) mLayoutInflater.inflate(R.layout.drop_down_list_item, null);
 			list.addView(listItem);
 
 			ImageView icon = (ImageView) listItem.findViewById(R.id.icon);
 			icon.setImageResource(item.icon);
 
-			TextView description = (TextView) listItem
-					.findViewById(R.id.description);
+			TextView description = (TextView) listItem.findViewById(R.id.description);
 			description.setText(item.description);
 
 			listItem.setOnClickListener(new OnClickListener() {
@@ -817,8 +796,7 @@ public abstract class StandOutWindow extends Service {
 			});
 		}
 
-		Drawable background = getResources().getDrawable(
-				android.R.drawable.editbox_dropdown_dark_frame);
+		Drawable background = getResources().getDrawable(android.R.drawable.editbox_dropdown_dark_frame);
 		dropDown.setBackgroundDrawable(background);
 		return dropDown;
 	}
@@ -855,8 +833,7 @@ public abstract class StandOutWindow extends Service {
 	 * @param event
 	 *            See linked method.
 	 */
-	public boolean onTouchBody(int id, Window window, View view,
-			MotionEvent event) {
+	public boolean onTouchBody(int id, Window window, View view, MotionEvent event) {
 		return false;
 	}
 
@@ -980,8 +957,7 @@ public abstract class StandOutWindow extends Service {
 	 *            The sending window's id. Provided if the sender wants a
 	 *            result.
 	 */
-	public void onReceiveData(int id, int requestCode, Bundle data,
-			Class<? extends StandOutWindow> fromCls, int fromId) {
+	public void onReceiveData(int id, int requestCode, Bundle data, Class<? extends StandOutWindow> fromCls, int fromId) {
 	}
 
 	/**
@@ -1078,11 +1054,6 @@ public abstract class StandOutWindow extends Service {
 			window = new Window(this, id);
 		}
 
-		if (window.visibility == Window.VISIBILITY_VISIBLE) {
-			throw new IllegalStateException("Tried to show(" + id
-					+ ") a window that is already shown.");
-		}
-
 		// alert callbacks and cancel if instructed
 		if (onShow(id, window)) {
 			Log.d(TAG, "Window " + id + " show cancelled by implementation.");
@@ -1106,6 +1077,7 @@ public abstract class StandOutWindow extends Service {
 				window.getChildAt(0).startAnimation(animation);
 			}
 		} catch (Exception ex) {
+			System.out.println("ERROR WITH ID " + id);
 			ex.printStackTrace();
 		}
 
@@ -1117,29 +1089,23 @@ public abstract class StandOutWindow extends Service {
 
 		// show the notification
 		if (notification != null) {
-			notification.flags = notification.flags
-					| Notification.FLAG_NO_CLEAR;
+			notification.flags = notification.flags | Notification.FLAG_NO_CLEAR;
 
 			// only show notification if not shown before
 			if (!startedForeground) {
 				// tell Android system to show notification
-				startForeground(
-						getClass().hashCode() + ONGOING_NOTIFICATION_ID,
-						notification);
+				if (id == 0)
+					startForeground(getClass().hashCode() + ONGOING_NOTIFICATION_ID, notification);
 				startedForeground = true;
 			} else {
 				// update notification if shown before
-				mNotificationManager.notify(getClass().hashCode()
-						+ ONGOING_NOTIFICATION_ID, notification);
+				if (id == 0)
+					mNotificationManager.notify(getClass().hashCode() + ONGOING_NOTIFICATION_ID, notification);
 			}
 		} else {
 			// notification can only be null if it was provided before
 			if (!startedForeground) {
-				throw new RuntimeException("Your StandOutWindow service must"
-						+ "provide a persistent notification."
-						+ "The notification prevents Android"
-						+ "from killing your service in low"
-						+ "memory situations.");
+				throw new RuntimeException("Your StandOutWindow service must" + "provide a persistent notification." + "The notification prevents Android" + "from killing your service in low" + "memory situations.");
 			}
 		}
 
@@ -1160,13 +1126,11 @@ public abstract class StandOutWindow extends Service {
 		final Window window = getWindow(id);
 
 		if (window == null) {
-			throw new IllegalArgumentException("Tried to hide(" + id
-					+ ") a null window.");
+			throw new IllegalArgumentException("Tried to hide(" + id + ") a null window.");
 		}
 
 		if (window.visibility == Window.VISIBILITY_GONE) {
-			throw new IllegalStateException("Tried to hide(" + id
-					+ ") a window that is not shown.");
+			throw new IllegalStateException("Tried to hide(" + id + ") a window that is not shown.");
 		}
 
 		// alert callbacks and cancel if instructed
@@ -1215,12 +1179,9 @@ public abstract class StandOutWindow extends Service {
 			}
 
 			// display the notification
-			notification.flags = notification.flags
-					| Notification.FLAG_NO_CLEAR
-					| Notification.FLAG_AUTO_CANCEL;
+			notification.flags = notification.flags | Notification.FLAG_NO_CLEAR | Notification.FLAG_AUTO_CANCEL;
 
-			mNotificationManager.notify(getClass().hashCode() + id,
-					notification);
+			mNotificationManager.notify(getClass().hashCode() + id, notification);
 
 		} else {
 			// if hide not enabled, close window
@@ -1239,11 +1200,6 @@ public abstract class StandOutWindow extends Service {
 		final Window window = getWindow(id);
 
 		if (window == null) {
-			throw new IllegalArgumentException("Tried to close(" + id
-					+ ") a null window.");
-		}
-
-		if (window.visibility == Window.VISIBILITY_TRANSITION) {
 			return;
 		}
 
@@ -1258,19 +1214,18 @@ public abstract class StandOutWindow extends Service {
 
 		unfocus(window);
 
-		window.visibility = Window.VISIBILITY_TRANSITION;
-
 		// get animation
 		Animation animation = getCloseAnimation(id);
 
 		// remove window
 		try {
 			// animate
-			if (animation != null) {
+			if (animation != null && window.visibility != Window.VISIBILITY_TRANSITION) {
 				animation.setAnimationListener(new AnimationListener() {
 
 					@Override
 					public void onAnimationStart(Animation animation) {
+						window.visibility = Window.VISIBILITY_TRANSITION;
 					}
 
 					@Override
@@ -1279,22 +1234,25 @@ public abstract class StandOutWindow extends Service {
 
 					@Override
 					public void onAnimationEnd(Animation animation) {
-						// remove the window from the window manager
-						mWindowManager.removeView(window);
-						window.visibility = Window.VISIBILITY_GONE;
+						try {
+							// remove the window from the window manager
+							mWindowManager.removeView(window);
 
-						// remove view from internal map
-						sWindowCache.removeCache(id,
-								StandOutWindow.this.getClass());
+							// remove view from internal map
+							sWindowCache.removeCache(id, StandOutWindow.this.getClass());
 
-						// if we just released the last window, quit
-						if (getExistingIds().size() == 0) {
-							// tell Android to remove the persistent
-							// notification
-							// the Service will be shutdown by the system on low
-							// memory
-							startedForeground = false;
-							stopForeground(true);
+							// if we just released the last window, quit
+							if (getExistingIds().size() == 0) {
+								// tell Android to remove the persistent
+								// notification
+								// the Service will be shutdown by the system on
+								// low
+								// memory
+								startedForeground = false;
+								stopForeground(true);
+							}
+						} catch (Exception e) {
+
 						}
 					}
 				});
@@ -1360,11 +1318,8 @@ public abstract class StandOutWindow extends Service {
 	 *            A bundle of parceleable data to be sent to the receiving
 	 *            window.
 	 */
-	public final void sendData(int fromId,
-			Class<? extends StandOutWindow> toCls, int toId, int requestCode,
-			Bundle data) {
-		StandOutWindow.sendData(this, toCls, toId, requestCode, data,
-				getClass(), fromId);
+	public final void sendData(int fromId, Class<? extends StandOutWindow> toCls, int toId, int requestCode, Bundle data) {
+		StandOutWindow.sendData(this, toCls, toId, requestCode, data, getClass(), fromId);
 	}
 
 	/**
@@ -1377,13 +1332,11 @@ public abstract class StandOutWindow extends Service {
 	public final synchronized void bringToFront(int id) {
 		Window window = getWindow(id);
 		if (window == null) {
-			throw new IllegalArgumentException("Tried to bringToFront(" + id
-					+ ") a null window.");
+			throw new IllegalArgumentException("Tried to bringToFront(" + id + ") a null window.");
 		}
 
 		if (window.visibility == Window.VISIBILITY_GONE) {
-			throw new IllegalStateException("Tried to bringToFront(" + id
-					+ ") a window that is not shown.");
+			throw new IllegalStateException("Tried to bringToFront(" + id + ") a window that is not shown.");
 		}
 
 		if (window.visibility == Window.VISIBILITY_TRANSITION) {
@@ -1392,8 +1345,7 @@ public abstract class StandOutWindow extends Service {
 
 		// alert callbacks and cancel if instructed
 		if (onBringToFront(id, window)) {
-			Log.w(TAG, "Window " + id
-					+ " bring to front cancelled by implementation.");
+			Log.w(TAG, "Window " + id + " bring to front cancelled by implementation.");
 			return;
 		}
 
@@ -1425,12 +1377,10 @@ public abstract class StandOutWindow extends Service {
 		// check if that window is focusable
 		final Window window = getWindow(id);
 		if (window == null) {
-			throw new IllegalArgumentException("Tried to focus(" + id
-					+ ") a null window.");
+			return false;
 		}
 
-		if (!Utils.isSet(window.flags,
-				StandOutFlags.FLAG_WINDOW_FOCUSABLE_DISABLE)) {
+		if (!Utils.isSet(window.flags, StandOutFlags.FLAG_WINDOW_FOCUSABLE_DISABLE)) {
 			// remove focus from previously focused window
 			if (sFocusedWindow != null) {
 				unfocus(sFocusedWindow);
@@ -1536,10 +1486,6 @@ public abstract class StandOutWindow extends Service {
 	public final void setTitle(int id, String text) {
 		Window window = getWindow(id);
 		if (window != null) {
-			View title = window.findViewById(R.id.title);
-			if (title instanceof TextView) {
-				((TextView) title).setText(text);
-			}
 		}
 	}
 
@@ -1556,10 +1502,6 @@ public abstract class StandOutWindow extends Service {
 	public final void setIcon(int id, int drawableRes) {
 		Window window = getWindow(id);
 		if (window != null) {
-			View icon = window.findViewById(R.id.window_icon);
-			if (icon instanceof ImageView) {
-				((ImageView) icon).setImageResource(drawableRes);
-			}
 		}
 	}
 
@@ -1574,8 +1516,7 @@ public abstract class StandOutWindow extends Service {
 	 * @param event
 	 * @return
 	 */
-	public boolean onTouchHandleMove(int id, Window window, View view,
-			MotionEvent event) {
+	public boolean onTouchHandleMove(int id, Window window, View view, MotionEvent event) {
 		StandOutLayoutParams params = window.getLayoutParams();
 
 		// how much you have to move in either direction in order for the
@@ -1585,62 +1526,54 @@ public abstract class StandOutWindow extends Service {
 		int totalDeltaY = window.touchInfo.lastY - window.touchInfo.firstY;
 
 		switch (event.getAction()) {
-			case MotionEvent.ACTION_DOWN:
-				window.touchInfo.lastX = (int) event.getRawX();
-				window.touchInfo.lastY = (int) event.getRawY();
+		case MotionEvent.ACTION_DOWN:
+			window.touchInfo.lastX = (int) event.getRawX();
+			window.touchInfo.lastY = (int) event.getRawY();
 
-				window.touchInfo.firstX = window.touchInfo.lastX;
-				window.touchInfo.firstY = window.touchInfo.lastY;
-				break;
-			case MotionEvent.ACTION_MOVE:
-				int deltaX = (int) event.getRawX() - window.touchInfo.lastX;
-				int deltaY = (int) event.getRawY() - window.touchInfo.lastY;
+			window.touchInfo.firstX = window.touchInfo.lastX;
+			window.touchInfo.firstY = window.touchInfo.lastY;
+			break;
+		case MotionEvent.ACTION_MOVE:
+			int deltaX = (int) event.getRawX() - window.touchInfo.lastX;
+			int deltaY = (int) event.getRawY() - window.touchInfo.lastY;
 
-				window.touchInfo.lastX = (int) event.getRawX();
-				window.touchInfo.lastY = (int) event.getRawY();
+			window.touchInfo.lastX = (int) event.getRawX();
+			window.touchInfo.lastY = (int) event.getRawY();
 
-				if (window.touchInfo.moving
-						|| Math.abs(totalDeltaX) >= params.threshold
-						|| Math.abs(totalDeltaY) >= params.threshold) {
-					window.touchInfo.moving = true;
+			if (window.touchInfo.moving || Math.abs(totalDeltaX) >= params.threshold || Math.abs(totalDeltaY) >= params.threshold) {
+				window.touchInfo.moving = true;
 
-					// if window is moveable
-					if (Utils.isSet(window.flags,
-							StandOutFlags.FLAG_BODY_MOVE_ENABLE)) {
+				// if window is moveable
+				if (Utils.isSet(window.flags, StandOutFlags.FLAG_BODY_MOVE_ENABLE)) {
 
-						// update the position of the window
-						if (event.getPointerCount() == 1) {
-							params.x += deltaX;
-							params.y += deltaY;
-						}
-
-						window.edit().setPosition(params.x, params.y).commit();
+					// update the position of the window
+					if (event.getPointerCount() == 1) {
+						params.x += deltaX;
+						params.y += deltaY;
 					}
+
+					window.edit().setPosition(params.x, params.y).commit();
 				}
-				break;
-			case MotionEvent.ACTION_UP:
-				window.touchInfo.moving = false;
+			}
+			break;
+		case MotionEvent.ACTION_UP:
+			window.touchInfo.moving = false;
 
-				if (event.getPointerCount() == 1) {
+			if (event.getPointerCount() == 1) {
 
-					// bring to front on tap
-					boolean tap = Math.abs(totalDeltaX) < params.threshold
-							&& Math.abs(totalDeltaY) < params.threshold;
-					if (tap
-							&& Utils.isSet(
-									window.flags,
-									StandOutFlags.FLAG_WINDOW_BRING_TO_FRONT_ON_TAP)) {
-						StandOutWindow.this.bringToFront(id);
-					}
-				}
-
-				// bring to front on touch
-				else if (Utils.isSet(window.flags,
-						StandOutFlags.FLAG_WINDOW_BRING_TO_FRONT_ON_TOUCH)) {
+				// bring to front on tap
+				boolean tap = Math.abs(totalDeltaX) < params.threshold && Math.abs(totalDeltaY) < params.threshold;
+				if (tap && Utils.isSet(window.flags, StandOutFlags.FLAG_WINDOW_BRING_TO_FRONT_ON_TAP)) {
 					StandOutWindow.this.bringToFront(id);
 				}
+			}
 
-				break;
+			// bring to front on touch
+			else if (Utils.isSet(window.flags, StandOutFlags.FLAG_WINDOW_BRING_TO_FRONT_ON_TOUCH)) {
+				StandOutWindow.this.bringToFront(id);
+			}
+
+			break;
 		}
 
 		onMove(id, window, view, event);
@@ -1659,42 +1592,38 @@ public abstract class StandOutWindow extends Service {
 	 * @param event
 	 * @return
 	 */
-	public boolean onTouchHandleResize(int id, Window window, View view,
-			MotionEvent event) {
-		StandOutLayoutParams params = (StandOutLayoutParams) window
-				.getLayoutParams();
+	public boolean onTouchHandleResize(int id, Window window, View view, MotionEvent event) {
+		StandOutLayoutParams params = (StandOutLayoutParams) window.getLayoutParams();
 
 		switch (event.getAction()) {
-			case MotionEvent.ACTION_DOWN:
+		case MotionEvent.ACTION_DOWN:
+			window.touchInfo.lastX = (int) event.getRawX();
+			window.touchInfo.lastY = (int) event.getRawY();
+
+			window.touchInfo.firstX = window.touchInfo.lastX;
+			window.touchInfo.firstY = window.touchInfo.lastY;
+			break;
+		case MotionEvent.ACTION_MOVE:
+			int deltaX = (int) event.getRawX() - window.touchInfo.lastX;
+			int deltaY = (int) event.getRawY() - window.touchInfo.lastY;
+
+			// update the size of the window
+			params.width += deltaX;
+			params.height += deltaY;
+
+			// keep window between min/max width/height
+			if (params.width >= params.minWidth && params.width <= params.maxWidth) {
 				window.touchInfo.lastX = (int) event.getRawX();
+			}
+
+			if (params.height >= params.minHeight && params.height <= params.maxHeight) {
 				window.touchInfo.lastY = (int) event.getRawY();
+			}
 
-				window.touchInfo.firstX = window.touchInfo.lastX;
-				window.touchInfo.firstY = window.touchInfo.lastY;
-				break;
-			case MotionEvent.ACTION_MOVE:
-				int deltaX = (int) event.getRawX() - window.touchInfo.lastX;
-				int deltaY = (int) event.getRawY() - window.touchInfo.lastY;
-
-				// update the size of the window
-				params.width += deltaX;
-				params.height += deltaY;
-
-				// keep window between min/max width/height
-				if (params.width >= params.minWidth
-						&& params.width <= params.maxWidth) {
-					window.touchInfo.lastX = (int) event.getRawX();
-				}
-
-				if (params.height >= params.minHeight
-						&& params.height <= params.maxHeight) {
-					window.touchInfo.lastY = (int) event.getRawY();
-				}
-
-				window.edit().setSize(params.width, params.height).commit();
-				break;
-			case MotionEvent.ACTION_UP:
-				break;
+			window.edit().setSize(params.width, params.height).commit();
+			break;
+		case MotionEvent.ACTION_UP:
+			break;
 		}
 
 		onResize(id, window, view, event);
@@ -1715,8 +1644,7 @@ public abstract class StandOutWindow extends Service {
 	 */
 	public synchronized boolean unfocus(Window window) {
 		if (window == null) {
-			throw new IllegalArgumentException(
-					"Tried to unfocus a null window.");
+			throw new IllegalArgumentException("Tried to unfocus a null window.");
 		}
 		return window.onFocus(false);
 	}
@@ -1733,8 +1661,7 @@ public abstract class StandOutWindow extends Service {
 		Window window = getWindow(id);
 
 		if (window == null) {
-			throw new IllegalArgumentException("Tried to updateViewLayout("
-					+ id + ") a null window.");
+			return;
 		}
 
 		if (window.visibility == Window.VISIBILITY_GONE) {
@@ -1806,20 +1733,16 @@ public abstract class StandOutWindow extends Service {
 
 		/**
 		 * @param id
-		 *            The id of the window.
+		 *            * The id of the window.
 		 */
 		public StandOutLayoutParams(int id) {
-			super(200, 200, TYPE_PHONE,
-					StandOutLayoutParams.FLAG_NOT_TOUCH_MODAL
-							| StandOutLayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-					PixelFormat.TRANSLUCENT);
+			super(200, 200, TYPE_PHONE, getOtherFlags(id), PixelFormat.TRANSLUCENT);
 
 			int windowFlags = getFlags(id);
 
 			setFocusFlag(false);
 
-			if (!Utils.isSet(windowFlags,
-					StandOutFlags.FLAG_WINDOW_EDGE_LIMITS_ENABLE)) {
+			if (!Utils.isSet(windowFlags, StandOutFlags.FLAG_WINDOW_EDGE_LIMITS_ENABLE)) {
 				// windows may be moved beyond edges
 				flags |= FLAG_LAYOUT_NO_LIMITS;
 			}
@@ -1827,11 +1750,22 @@ public abstract class StandOutWindow extends Service {
 			x = getX(id, width);
 			y = getY(id, height);
 
-			gravity = Gravity.TOP | Gravity.LEFT;
+			dimAmount = 0.0f;
+
+			this.gravity = Gravity.LEFT | Gravity.TOP;
 
 			threshold = 10;
 			minWidth = minHeight = 0;
 			maxWidth = maxHeight = Integer.MAX_VALUE;
+		}
+
+		public StandOutLayoutParams(int id, int w, int h, int gravity) {
+			this(id);
+			width = w;
+			height = h;
+			x = 0;
+			y = 0;
+			this.gravity = gravity;
 		}
 
 		/**
@@ -1846,15 +1780,6 @@ public abstract class StandOutWindow extends Service {
 			this(id);
 			width = w;
 			height = h;
-		}
-		
-		public StandOutLayoutParams(int id, int w, int h, int gravity) {
-			this(id);
-			width = w;
-			height = h;
-			x = 0;
-			y = 0;
-			this.gravity = gravity;
 		}
 
 		/**
@@ -1912,8 +1837,7 @@ public abstract class StandOutWindow extends Service {
 		 * @param minHeight
 		 *            The mininum height of the window.
 		 */
-		public StandOutLayoutParams(int id, int w, int h, int xpos, int ypos,
-				int minWidth, int minHeight) {
+		public StandOutLayoutParams(int id, int w, int h, int xpos, int ypos, int minWidth, int minHeight) {
 			this(id, w, h, xpos, ypos);
 
 			this.minWidth = minWidth;
@@ -1939,8 +1863,7 @@ public abstract class StandOutWindow extends Service {
 		 *            The touch distance threshold that distinguishes a tap from
 		 *            a drag.
 		 */
-		public StandOutLayoutParams(int id, int w, int h, int xpos, int ypos,
-				int minWidth, int minHeight, int threshold) {
+		public StandOutLayoutParams(int id, int w, int h, int xpos, int ypos, int minWidth, int minHeight, int threshold) {
 			this(id, w, h, xpos, ypos, minWidth, minHeight);
 
 			this.threshold = threshold;
