@@ -1,1 +1,1 @@
-A fork of Mark Wei's popular StandOut library, with a slight code change for supporting gravity
+StandOut for Android Studio, with gravity for floating windows
